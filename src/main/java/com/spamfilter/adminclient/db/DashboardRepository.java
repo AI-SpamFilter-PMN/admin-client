@@ -57,7 +57,7 @@ public class DashboardRepository {
                     "SELECT count(*) FROM calls WHERE started_at >= current_date AND status = 'BLOCKED'");
 
             long blocklistSize = scalar(con, "SELECT count(*) FROM blocklist");
-            long whitelistSize = scalar(con, "SELECT count(*) FROM whitelist");
+            long whitelistSize = scalar(con, "SELECT count(*) FROM whitelisted_senders");
 
             long errors24h = scalar(con,
                     "SELECT count(*) FROM logs WHERE created_at >= now() - interval '24 hours' AND severity = 'ERROR'");

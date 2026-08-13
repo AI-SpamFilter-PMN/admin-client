@@ -229,7 +229,7 @@ final class WebPage {
                   </div>
                 </div>
 
-                <script>initEntryListPage(%s);</script>
+                <script>window.addEventListener('DOMContentLoaded', () => initEntryListPage(%s));</script>
                 """.formatted(escape(kind), escape(kind), pageResult.getTotalItems(), rows,
                 pageResult.getPage(), pageResult.getTotalPages(), pageResult.getTotalItems(),
                 jsString(apiUrl));
