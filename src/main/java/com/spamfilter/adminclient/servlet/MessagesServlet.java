@@ -156,13 +156,16 @@ public class MessagesServlet extends HttpServlet {
                           page: state.page, pageSize: state.pageSize
                         });
                         const data = await api(apiPath + '?' + params.toString());
-                        totalPages = Math.max(1, Math.ceil(data.totalItems / data.pageSize));
+                        const currentPage = Number(data.page || state.page || 1);
+                        const pageSize = Number(data.pageSize || state.pageSize || 25);
+                        state.page = currentPage;
+                        totalPages = Math.max(1, Math.ceil(Number(data.totalItems || 0) / pageSize));
                         els.body.innerHTML = data.items.length === 0
                           ? '<tr><td colspan="6"><div class="empty-state"><div class="glyph">&#9711;</div>No messages match these filters.</div></td></tr>'
                           : data.items.map(rowHtml).join('');
-                        els.info.textContent = 'Page ' + data.page + ' of ' + totalPages + ' \\u00b7 ' + data.totalItems + ' total';
-                        els.prev.disabled = data.page <= 1;
-                        els.next.disabled = data.page >= totalPages;
+                        els.info.textContent = 'Page ' + state.page + ' of ' + totalPages + ' \\u00b7 ' + data.totalItems + ' total';
+                        els.prev.disabled = state.page <= 1;
+                        els.next.disabled = state.page >= totalPages;
                       } catch (err) {
                         showToast(err.message, 'error');
                       } finally {
@@ -172,8 +175,14 @@ public class MessagesServlet extends HttpServlet {
 
                     els.apply.addEventListener('click', () => { state.page = 1; load(); });
                     els.query.addEventListener('keydown', (e) => { if (e.key === 'Enter') { state.page = 1; load(); } });
-                    els.prev.addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
-                    els.next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; load(); } });
+                    els.prev.addEventListener('click', () => {
+                      const nextPage = Number(state.page || 1) - 1;
+                      if (nextPage >= 1) { state.page = nextPage; load(); }
+                    });
+                    els.next.addEventListener('click', () => {
+                      const nextPage = Number(state.page || 1) + 1;
+                      if (nextPage <= totalPages) { state.page = nextPage; load(); }
+                    });
                     els.body.addEventListener('click', (e) => {
                       const viewBtn = e.target.closest('[data-view-message]');
                       if (viewBtn) {

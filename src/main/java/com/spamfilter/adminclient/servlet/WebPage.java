@@ -622,9 +622,15 @@ final class WebPage {
 
               function rowHtml(e) {
                 const expires = e.expiresAt ? formatDateTime(e.expiresAt) : '&mdash;';
+                const reasonText = escapeHtml(e.reason || '');
                 return `<tr data-id="${e.id}">
                   <td class="mono">${escapeHtml(e.msisdn)}</td>
-                  <td>${escapeHtml(e.reason || '')}</td>
+                  <td>
+                    <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                      <span>${reasonText}</span>
+                      <button type="button" class="btn-ghost btn-sm" data-view-details="${escapeHtml(e.msisdn)}">View details</button>
+                    </div>
+                  </td>
                   <td class="muted">${formatDateTime(e.createdAt)}</td>
                   <td class="muted">${expires}</td>
                   <td class="row-actions"><button type="button" class="btn-ghost btn-sm" data-del="${e.id}">Remove</button></td>
@@ -635,13 +641,16 @@ final class WebPage {
                 tableWrap.classList.add('loading');
                 try {
                   const data = await api(apiUrl + '?query=' + encodeURIComponent(state.query) + '&page=' + state.page + '&pageSize=' + state.pageSize);
-                  totalPages = Math.max(1, Math.ceil(data.totalItems / data.pageSize));
+                  const currentPage = Number(data.page || state.page || 1);
+                  const pageSize = Number(data.pageSize || state.pageSize || 20);
+                  state.page = currentPage;
+                  totalPages = Math.max(1, Math.ceil(Number(data.totalItems || 0) / pageSize));
                   tbody.innerHTML = data.items.length === 0
                     ? '<tr><td colspan="5"><div class="empty-state"><div class="glyph">&#9711;</div>No entries found.</div></td></tr>'
                     : data.items.map(rowHtml).join('');
-                  info.textContent = 'Page ' + data.page + ' of ' + totalPages + ' \\u00b7 ' + data.totalItems + ' total';
-                  prevBtn.disabled = data.page <= 1;
-                  nextBtn.disabled = data.page >= totalPages;
+                  info.textContent = 'Page ' + state.page + ' of ' + totalPages + ' \\u00b7 ' + data.totalItems + ' total';
+                  prevBtn.disabled = state.page <= 1;
+                  nextBtn.disabled = state.page >= totalPages;
                 } catch (err) {
                   showToast(err.message, 'error');
                 } finally {
@@ -655,10 +664,85 @@ final class WebPage {
                 searchTimer = setTimeout(() => { state.query = searchInput.value; state.page = 1; load(); }, 300);
               });
 
-              prevBtn.addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
-              nextBtn.addEventListener('click', () => { if (state.page < totalPages) { state.page++; load(); } });
+              prevBtn.addEventListener('click', () => {
+                const nextPage = Number(state.page || 1) - 1;
+                if (nextPage >= 1) { state.page = nextPage; load(); }
+              });
+              nextBtn.addEventListener('click', () => {
+                const nextPage = Number(state.page || 1) + 1;
+                if (nextPage <= totalPages) { state.page = nextPage; load(); }
+              });
 
               tbody.addEventListener('click', async (e) => {
+                const detailsBtn = e.target.closest('[data-view-details]');
+                if (detailsBtn) {
+                  const msisdn = detailsBtn.getAttribute('data-view-details');
+                  try {
+                    const data = await api('/api/blocklist/details?msisdn=' + encodeURIComponent(msisdn));
+                    if (data.recordType === 'none') {
+                      showToast(data.message || 'No related record found', 'error');
+                      return;
+                    }
+                    const item = data.item || {};
+                    const isMessage = data.recordType === 'message';
+                    const detailFields = [
+                      ['Source', item.source || '—'],
+                      ['Destination', item.destination || '—'],
+                      ['Status', item.status || '—'],
+                      ['Classification', item.classificationLabel || '—'],
+                      ['Score', item.classificationScore == null ? '—' : String(item.classificationScore)],
+                      ['Started', item.startedAt || '—'],
+                      ['Ended', item.endedAt || '—'],
+                      ['Received', item.receivedAt || '—'],
+                      ['ID', item.smppMessageId || item.id || '—']
+                    ];
+                    const contentLabel = isMessage ? 'Message body' : 'Call transcript';
+                    const contentValue = isMessage ? (item.smsBody || 'No message content available.') : (item.transcript || 'No transcript available.');
+                    const detailGridHtml = detailFields.map(([label, value]) => `
+                      <div style="padding:0.7rem 0.9rem; border:1px solid rgba(255,255,255,0.08); border-radius:12px; background: rgba(255,255,255,0.02);">
+                        <div style="font-size:0.72rem; letter-spacing:0.08em; text-transform:uppercase; color:#9da4b6; margin-bottom:0.35rem;">${escapeHtml(label)}</div>
+                        <div style="white-space:pre-wrap; word-break:break-word; color:#f3f6ff;">${escapeHtml(String(value))}</div>
+                      </div>
+                    `).join('');
+                    const root = document.getElementById('modalRoot');
+                    root.innerHTML = `
+                      <div class="modal-backdrop">
+                        <div class="modal-card" style="max-width: 900px; width: min(82vw, 900px);">
+                          <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:1rem;">
+                            <div>
+                              <div style="font-size:0.72rem; letter-spacing:0.12em; text-transform:uppercase; color:#8ddcff; margin-bottom:0.35rem;">Blocked ${isMessage ? 'message' : 'call'}</div>
+                              <h3 style="margin:0;">${isMessage ? 'Message details' : 'Call details'}</h3>
+                            </div>
+                            <button type="button" class="btn-ghost" data-act="close">Close</button>
+                          </div>
+                          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:0.85rem; margin-bottom:1rem;">${detailGridHtml}</div>
+                          <div style="border:1px solid rgba(255,255,255,0.08); border-radius:14px; background: rgba(124,92,255,0.06); overflow:hidden;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; gap:1rem; padding:0.8rem 1rem; border-bottom:1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.02);">
+                              <strong>${escapeHtml(contentLabel)}</strong>
+                              <button type="button" class="btn-ghost btn-sm" data-collapse-content="expanded">Collapse</button>
+                            </div>
+                            <pre data-content-panel style="white-space: pre-wrap; word-break: break-word; margin:0; padding:1rem; max-height: 220px; overflow:auto; background: rgba(9,11,17,0.38);">${escapeHtml(contentValue)}</pre>
+                          </div>
+                        </div>
+                      </div>`;
+                    const backdrop = root.querySelector('.modal-backdrop');
+                    const close = () => { root.innerHTML = ''; };
+                    const collapseBtn = root.querySelector('[data-collapse-content]');
+                    const contentPanel = root.querySelector('[data-content-panel]');
+                    collapseBtn.addEventListener('click', () => {
+                      const expanded = collapseBtn.getAttribute('data-collapse-content') === 'expanded';
+                      collapseBtn.setAttribute('data-collapse-content', expanded ? 'collapsed' : 'expanded');
+                      collapseBtn.textContent = expanded ? 'Expand' : 'Collapse';
+                      contentPanel.style.maxHeight = expanded ? '72px' : '220px';
+                    });
+                    backdrop.addEventListener('click', (event) => { if (event.target === backdrop) close(); });
+                    root.querySelector('[data-act=close]').addEventListener('click', close);
+                  } catch (err) {
+                    showToast(err.message, 'error');
+                  }
+                  return;
+                }
+
                 const btn = e.target.closest('[data-del]');
                 if (!btn) return;
                 const id = btn.getAttribute('data-del');

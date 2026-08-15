@@ -3,6 +3,8 @@ package com.spamfilter.adminclient.servlet;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.spamfilter.adminclient.auth.AdminSessionUtil;
 import com.spamfilter.adminclient.db.BlocklistRepository;
+import com.spamfilter.adminclient.db.CallRepository;
+import com.spamfilter.adminclient.db.MessageRepository;
 import com.spamfilter.adminclient.model.BlocklistEntry;
 import com.spamfilter.adminclient.model.Page;
 import jakarta.servlet.http.HttpServlet;
@@ -26,15 +28,27 @@ public class BlacklistServlet extends HttpServlet {
     private static final String API_PATH = "/api/blocklist";
 
     private final BlocklistRepository blocklistRepository;
+    private final MessageRepository messageRepository;
+    private final CallRepository callRepository;
 
     public BlacklistServlet(BlocklistRepository blocklistRepository) {
+        this(blocklistRepository, null, null);
+    }
+
+    public BlacklistServlet(BlocklistRepository blocklistRepository, MessageRepository messageRepository, CallRepository callRepository) {
         this.blocklistRepository = blocklistRepository;
+        this.messageRepository = messageRepository;
+        this.callRepository = callRepository;
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         if (API_PATH.equals(req.getServletPath())) {
             apiSearch(req, resp);
+            return;
+        }
+        if ("/api/blocklist/details".equals(req.getServletPath())) {
+            apiDetails(req, resp);
             return;
         }
 
@@ -69,6 +83,44 @@ public class BlacklistServlet extends HttpServlet {
         } catch (IllegalStateException e) {
             JsonSupport.writeError(resp, HttpServletResponse.SC_SERVICE_UNAVAILABLE, e.getMessage());
         }
+    }
+
+    private void apiDetails(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        String msisdn = req.getParameter("msisdn");
+        if (msisdn == null || msisdn.isBlank()) {
+            JsonSupport.writeError(resp, HttpServletResponse.SC_BAD_REQUEST, "msisdn is required");
+            return;
+        }
+        if (messageRepository == null && callRepository == null) {
+            JsonSupport.writeError(resp, HttpServletResponse.SC_SERVICE_UNAVAILABLE, "No related-record lookup is configured");
+            return;
+        }
+
+        Map<String, Object> message = (messageRepository == null) ? null : messageRepository.findLatestByMsisdn(msisdn.trim());
+        if (message != null) {
+            JsonSupport.writeJson(resp, HttpServletResponse.SC_OK, Map.of(
+                    "recordType", "message",
+                    "item", message,
+                    "message", "Latest related message"
+            ));
+            return;
+        }
+
+        Map<String, Object> call = (callRepository == null) ? null : callRepository.findLatestByMsisdn(msisdn.trim());
+        if (call != null) {
+            JsonSupport.writeJson(resp, HttpServletResponse.SC_OK, Map.of(
+                    "recordType", "call",
+                    "item", call,
+                    "message", "Latest related call"
+            ));
+            return;
+        }
+
+        JsonSupport.writeJson(resp, HttpServletResponse.SC_OK, Map.of(
+                "recordType", "none",
+                "item", null,
+                "message", "No related message or call was found for this number"
+        ));
     }
 
     @Override

@@ -10,7 +10,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Read-only JDBC access to Neon's calls table, across every subscriber. This
@@ -29,6 +31,34 @@ public class CallRepository {
             throw new IllegalStateException("Database is not configured");
         }
         return dataSource.getConnection();
+    }
+
+    public Map<String, Object> findLatestByMsisdn(String msisdn) {
+        String sql = "SELECT id, source, destination, started_at, ended_at, classification_label, "
+                + "classification_score, status, transcript FROM calls WHERE source = ? OR destination = ? "
+                + "ORDER BY started_at DESC LIMIT 1";
+        try (Connection con = connect(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, msisdn);
+            ps.setString(2, msisdn);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+                Map<String, Object> row = new LinkedHashMap<>();
+                row.put("id", rs.getString("id"));
+                row.put("source", rs.getString("source"));
+                row.put("destination", rs.getString("destination"));
+                row.put("startedAt", rs.getTimestamp("started_at") == null ? null : rs.getTimestamp("started_at").toInstant().toString());
+                row.put("endedAt", rs.getTimestamp("ended_at") == null ? null : rs.getTimestamp("ended_at").toInstant().toString());
+                row.put("classificationLabel", rs.getString("classification_label"));
+                row.put("classificationScore", rs.getObject("classification_score") == null ? null : rs.getDouble("classification_score"));
+                row.put("status", rs.getString("status"));
+                row.put("transcript", rs.getString("transcript"));
+                return row;
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not load related call: " + e.getMessage(), e);
+        }
     }
 
     public Page<CallRow> search(String status, String query, int page, int pageSize) {

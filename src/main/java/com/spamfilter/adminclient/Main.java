@@ -65,11 +65,13 @@ public class Main {
         Tomcat.addServlet(ctx, "dashboard", new DashboardServlet(dashboardRepository));
         ctx.addServletMappingDecoded("/", "dashboard");
 
-        BlacklistServlet blacklistServlet = new BlacklistServlet(blocklistRepository);
+        BlacklistServlet blacklistServlet = new BlacklistServlet(blocklistRepository, messageRepository, callRepository);
         Tomcat.addServlet(ctx, "blacklistPage", blacklistServlet);
         ctx.addServletMappingDecoded("/blacklist", "blacklistPage");
         Tomcat.addServlet(ctx, "blacklistApi", blacklistServlet);
         ctx.addServletMappingDecoded("/api/blocklist", "blacklistApi");
+        Tomcat.addServlet(ctx, "blacklistDetailsApi", blacklistServlet);
+        ctx.addServletMappingDecoded("/api/blocklist/details", "blacklistDetailsApi");
 
         WhitelistServlet whitelistServlet = new WhitelistServlet(whitelistRepository);
         Tomcat.addServlet(ctx, "whitelistPage", whitelistServlet);
