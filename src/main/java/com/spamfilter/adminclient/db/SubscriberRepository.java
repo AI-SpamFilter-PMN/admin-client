@@ -11,6 +11,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 /**
  * JDBC access to the subscribers table - the users/numbers on the private
@@ -92,6 +93,66 @@ public class SubscriberRepository {
             throw new IllegalStateException("Could not load subscribers: " + e.getMessage(), e);
         }
         return new Page<>(items, page, pageSize, total);
+    }
+
+    public void add(String msisdn, String imsi, String displayName, String status) {
+        if (msisdn == null || msisdn.isBlank()) {
+            throw new IllegalArgumentException("msisdn is required");
+        }
+        if (status == null || !VALID_STATUSES.contains(status)) {
+            throw new IllegalArgumentException("Invalid status: " + status);
+        }
+
+        String sql = "INSERT INTO subscribers (id, msisdn, imsi, display_name, status) VALUES (?, ?, ?, ?, ?)";
+        try (Connection con = connect(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setObject(1, UUID.randomUUID());
+            ps.setString(2, msisdn.trim());
+            ps.setString(3, imsi == null || imsi.isBlank() ? null : imsi.trim());
+            ps.setString(4, displayName == null || displayName.isBlank() ? null : displayName.trim());
+            ps.setString(5, status);
+            int inserted = ps.executeUpdate();
+            if (inserted == 0) {
+                throw new IllegalStateException("Subscriber insert did not affect any row");
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not add subscriber: " + e.getMessage(), e);
+        }
+    }
+
+    public void deleteById(String id) {
+        if (id == null || id.isBlank()) {
+            throw new IllegalArgumentException("id is required");
+        }
+
+        String sql = "DELETE FROM subscribers WHERE id = ?";
+        try (Connection con = connect(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setObject(1, UUID.fromString(id));
+            int deleted = ps.executeUpdate();
+            if (deleted == 0) {
+                throw new IllegalArgumentException("No such subscriber");
+            }
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid subscriber id: " + id, e);
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not remove subscriber: " + e.getMessage(), e);
+        }
+    }
+
+    public void deleteByMsisdn(String msisdn) {
+        if (msisdn == null || msisdn.isBlank()) {
+            throw new IllegalArgumentException("msisdn is required");
+        }
+
+        String sql = "DELETE FROM subscribers WHERE msisdn = ?";
+        try (Connection con = connect(); PreparedStatement ps = con.prepareStatement(sql)) {
+            ps.setString(1, msisdn.trim());
+            int deleted = ps.executeUpdate();
+            if (deleted == 0) {
+                throw new IllegalArgumentException("No such subscriber");
+            }
+        } catch (SQLException e) {
+            throw new IllegalStateException("Could not remove subscriber: " + e.getMessage(), e);
+        }
     }
 
     public void updateStatus(String id, String status) {

@@ -113,6 +113,7 @@ public class CallsServlet extends HttpServlet {
                       info: document.getElementById('callPaginationInfo'), prev: document.getElementById('callPrevBtn'),
                       next: document.getElementById('callNextBtn'), apply: document.getElementById('callApply'),
                     };
+                    const apiPath = "%s";
                     const state = { page: 1, pageSize: 25 };
                     let totalPages = 1;
 
@@ -145,7 +146,7 @@ public class CallsServlet extends HttpServlet {
                       els.wrap.classList.add('loading');
                       try {
                         const params = new URLSearchParams({ status: els.status.value, query: els.query.value, page: state.page, pageSize: state.pageSize });
-                        const data = await api('%s?' + params.toString());
+                        const data = await api(apiPath + '?' + params.toString());
                         totalPages = Math.max(1, Math.ceil(data.totalItems / data.pageSize));
                         els.body.innerHTML = data.items.length === 0
                           ? '<tr><td colspan="5"><div class="empty-state"><div class="glyph">&#9711;</div>No calls match these filters.</div></td></tr>'
@@ -164,14 +165,14 @@ public class CallsServlet extends HttpServlet {
                     els.query.addEventListener('keydown', (e) => { if (e.key === 'Enter') { state.page = 1; load(); } });
                     els.prev.addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
                     els.next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; load(); } });
+                    load();
                   })();
                 </script>
                 """.formatted(
                 WebPage.escape(query == null ? "" : query),
                 "COMPLETED".equals(status) ? " selected" : "", "BLOCKED".equals(status) ? " selected" : "",
                 "MISSED".equals(status) ? " selected" : "", "FAILED".equals(status) ? " selected" : "",
-                rows, result.getPage(), result.getTotalPages(), result.getTotalItems(),
-                API_PATH);
+                rows, result.getPage(), result.getTotalPages(), result.getTotalItems(), API_PATH);
     }
 
     private String row(CallRow c) {

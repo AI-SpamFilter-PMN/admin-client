@@ -121,6 +121,7 @@ public class MessagesServlet extends HttpServlet {
                       prev: document.getElementById('msgPrevBtn'), next: document.getElementById('msgNextBtn'),
                       apply: document.getElementById('msgApply'),
                     };
+                    const apiPath = "%s";
                     const state = { page: 1, pageSize: 25 };
                     let totalPages = 1;
 
@@ -151,7 +152,7 @@ public class MessagesServlet extends HttpServlet {
                           label: els.label.value, status: els.status.value, query: els.query.value,
                           page: state.page, pageSize: state.pageSize
                         });
-                        const data = await api('%s?' + params.toString());
+                        const data = await api(apiPath + '?' + params.toString());
                         totalPages = Math.max(1, Math.ceil(data.totalItems / data.pageSize));
                         els.body.innerHTML = data.items.length === 0
                           ? '<tr><td colspan="6"><div class="empty-state"><div class="glyph">&#9711;</div>No messages match these filters.</div></td></tr>'
@@ -175,14 +176,14 @@ public class MessagesServlet extends HttpServlet {
                       if (!btn) return;
                       quickAddToList(btn.dataset.list, btn.dataset.msisdn, btn.dataset.name);
                     });
+                    load();
                   })();
                 </script>
                 """.formatted(
                 WebPage.escape(query == null ? "" : query),
                 "spam".equals(label) ? " selected" : "", "ham".equals(label) ? " selected" : "",
                 "DELIVERED".equals(status) ? " selected" : "", "BLOCKED".equals(status) ? " selected" : "",
-                rows, result.getPage(), result.getTotalPages(), result.getTotalItems(),
-                API_PATH);
+                rows, result.getPage(), result.getTotalPages(), result.getTotalItems(), API_PATH);
     }
 
     private String row(MessageRow m) {

@@ -645,6 +645,7 @@ final class WebPage {
                   showToast(err.message, 'error');
                 }
               });
+              load();
             }
             """;
 }

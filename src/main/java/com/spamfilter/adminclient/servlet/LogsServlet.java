@@ -111,6 +111,7 @@ public class LogsServlet extends HttpServlet {
                       info: document.getElementById('logPaginationInfo'), prev: document.getElementById('logPrevBtn'),
                       next: document.getElementById('logNextBtn'), apply: document.getElementById('logApply'),
                     };
+                    const apiPath = "%s";
                     const state = { page: 1, pageSize: 25 };
                     let totalPages = 1;
 
@@ -133,7 +134,7 @@ public class LogsServlet extends HttpServlet {
                       els.wrap.classList.add('loading');
                       try {
                         const params = new URLSearchParams({ severity: els.severity.value, query: els.query.value, page: state.page, pageSize: state.pageSize });
-                        const data = await api('%s?' + params.toString());
+                        const data = await api(apiPath + '?' + params.toString());
                         totalPages = Math.max(1, Math.ceil(data.totalItems / data.pageSize));
                         els.body.innerHTML = data.items.length === 0
                           ? '<tr><td colspan="4"><div class="empty-state"><div class="glyph">&#9711;</div>No log entries match these filters.</div></td></tr>'
@@ -152,14 +153,14 @@ public class LogsServlet extends HttpServlet {
                     els.query.addEventListener('keydown', (e) => { if (e.key === 'Enter') { state.page = 1; load(); } });
                     els.prev.addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
                     els.next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; load(); } });
+                    load();
                   })();
                 </script>
                 """.formatted(
                 WebPage.escape(query == null ? "" : query),
                 "INFO".equals(severity) ? " selected" : "", "WARN".equals(severity) ? " selected" : "",
                 "ERROR".equals(severity) ? " selected" : "",
-                rows, result.getPage(), result.getTotalPages(), result.getTotalItems(),
-                API_PATH);
+                rows, result.getPage(), result.getTotalPages(), result.getTotalItems(), API_PATH);
     }
 
     private String row(LogEntry l) {

@@ -1,0 +1,4 @@
+cd "/home/ali/Desktop/ITI 9 Months/Projects/Graduation Project/admin-client"
+mvn clean package
+export DB_URL='postgresql://neondb_owner:npg_NkXfGemA5i4p@ep-purple-pine-b273snp3-pooler.c-6.eu-central-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+java -Dserver.port=8082 -Ddb.url="$DB_URL" -jar target/admin-client.jar

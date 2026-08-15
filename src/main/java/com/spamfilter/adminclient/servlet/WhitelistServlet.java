@@ -172,6 +172,7 @@ public class WhitelistServlet extends HttpServlet {
                       prev: document.getElementById('wlPrevBtn'), next: document.getElementById('wlNextBtn'),
                       form: document.getElementById('wlForm'),
                     };
+                    const apiPath = "%s";
                     const state = { page: 1, pageSize: 20, query: '' };
                     let totalPages = 1;
 
@@ -188,7 +189,7 @@ public class WhitelistServlet extends HttpServlet {
                     async function load() {
                       els.wrap.classList.add('loading');
                       try {
-                        const data = await api('%s?query=' + encodeURIComponent(state.query) + '&page=' + state.page + '&pageSize=' + state.pageSize);
+                        const data = await api(apiPath + '?query=' + encodeURIComponent(state.query) + '&page=' + state.page + '&pageSize=' + state.pageSize);
                         totalPages = Math.max(1, Math.ceil(data.totalItems / data.pageSize));
                         els.body.innerHTML = data.items.length === 0
                           ? '<tr><td colspan="5"><div class="empty-state"><div class="glyph">&#9711;</div>No trusted senders yet.</div></td></tr>'
@@ -218,7 +219,7 @@ public class WhitelistServlet extends HttpServlet {
                       const ok = await confirmModal('Remove trusted sender?', 'This sender will go back through normal spam classification.');
                       if (!ok) return;
                       try {
-                        await api('%s?id=' + id, { method: 'DELETE' });
+                        await api(apiPath + '?id=' + id, { method: 'DELETE' });
                         showToast('Removed', 'ok');
                         load();
                       } catch (err) {
@@ -234,7 +235,7 @@ public class WhitelistServlet extends HttpServlet {
                         description: document.getElementById('wlDescription').value.trim() || null,
                       };
                       try {
-                        await api('%s', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                        await api(apiPath, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
                         showToast('Added', 'ok');
                         els.form.reset();
                         state.page = 1;
@@ -243,10 +244,11 @@ public class WhitelistServlet extends HttpServlet {
                         showToast(err.message, 'error');
                       }
                     });
+                    load();
                   })();
                 </script>
                 """.formatted(pageResult.getTotalItems(), rows, pageResult.getPage(), pageResult.getTotalPages(),
-                pageResult.getTotalItems(), API_PATH, API_PATH, API_PATH);
+                pageResult.getTotalItems(), API_PATH);
     }
 
     private String row(WhitelistedSender w) {
