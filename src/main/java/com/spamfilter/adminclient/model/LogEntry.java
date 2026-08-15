@@ -14,16 +14,26 @@ public class LogEntry {
     private final String message;
     private final String relatedMessageId;
     private final String relatedCallId;
+    private final String sourceNumber;
+    private final String destinationNumber;
     private final String createdAt;
 
     public LogEntry(long id, String eventType, String severity, String message,
                      String relatedMessageId, String relatedCallId, Instant createdAt) {
+        this(id, eventType, severity, message, relatedMessageId, relatedCallId, null, null, createdAt);
+    }
+
+    public LogEntry(long id, String eventType, String severity, String message,
+                     String relatedMessageId, String relatedCallId,
+                     String sourceNumber, String destinationNumber, Instant createdAt) {
         this.id = id;
         this.eventType = eventType;
         this.severity = severity;
         this.message = message;
         this.relatedMessageId = relatedMessageId;
         this.relatedCallId = relatedCallId;
+        this.sourceNumber = sourceNumber;
+        this.destinationNumber = destinationNumber;
         this.createdAt = createdAt.toString();
     }
 
@@ -49,6 +59,14 @@ public class LogEntry {
 
     public String getRelatedCallId() {
         return relatedCallId;
+    }
+
+    public String getSourceNumber() {
+        return sourceNumber;
+    }
+
+    public String getDestinationNumber() {
+        return destinationNumber;
     }
 
     public String getCreatedAt() {

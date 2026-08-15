@@ -68,15 +68,15 @@ public class LogsServlet extends HttpServlet {
 
     private String render(Page<LogEntry> result, String severity, String query) {
         String rows = result.getItems().isEmpty()
-                ? "<tr><td colspan=\"4\"><div class=\"empty-state\"><div class=\"glyph\">&#9711;</div>No log entries match these filters.</div></td></tr>"
+                ? "<tr><td colspan=\"6\"><div class=\"empty-state\"><div class=\"glyph\">&#9711;</div>No log entries match these filters.</div></td></tr>"
                 : result.getItems().stream().map(this::row).collect(Collectors.joining());
 
         return """
                 <div class="card">
                   <div class="filter-bar">
                     <div class="field">
-                      <label for="logQuery">Event type or message</label>
-                      <input id="logQuery" placeholder="e.g. smpp.bind" value="%s">
+                      <label for="logQuery">Event type, message, source or destination</label>
+                      <input id="logQuery" placeholder="e.g. smpp.bind or 2000" value="%s">
                     </div>
                     <div class="field">
                       <label for="logSeverity">Severity</label>
@@ -92,7 +92,7 @@ public class LogsServlet extends HttpServlet {
 
                   <div class="table-wrap" id="logTableWrap">
                     <table>
-                      <thead><tr><th>Severity</th><th>Event</th><th>Message</th><th>When</th></tr></thead>
+                      <thead><tr><th>Severity</th><th>Event</th><th>Source</th><th>Destination</th><th>Message</th><th>When</th></tr></thead>
                       <tbody id="logTableBody">%s</tbody>
                     </table>
                   </div>
@@ -125,6 +125,8 @@ public class LogsServlet extends HttpServlet {
                       return `<tr>
                         <td>${severityBadge(l.severity)}</td>
                         <td class="mono">${escapeHtml(l.eventType)}</td>
+                        <td class="mono">${escapeHtml(l.sourceNumber || '-')}</td>
+                        <td class="mono">${escapeHtml(l.destinationNumber || '-')}</td>
                         <td>${escapeHtml(l.message)}</td>
                         <td class="muted">${new Date(l.createdAt).toLocaleString()}</td>
                       </tr>`;
@@ -137,7 +139,7 @@ public class LogsServlet extends HttpServlet {
                         const data = await api(apiPath + '?' + params.toString());
                         totalPages = Math.max(1, Math.ceil(data.totalItems / data.pageSize));
                         els.body.innerHTML = data.items.length === 0
-                          ? '<tr><td colspan="4"><div class="empty-state"><div class="glyph">&#9711;</div>No log entries match these filters.</div></td></tr>'
+                          ? '<tr><td colspan="6"><div class="empty-state"><div class="glyph">&#9711;</div>No log entries match these filters.</div></td></tr>'
                           : data.items.map(rowHtml).join('');
                         els.info.textContent = 'Page ' + data.page + ' of ' + totalPages + ' \\u00b7 ' + data.totalItems + ' total';
                         els.prev.disabled = data.page <= 1;
@@ -168,10 +170,14 @@ public class LogsServlet extends HttpServlet {
                 <tr>
                   <td>%s</td>
                   <td class="mono">%s</td>
+                  <td class="mono">%s</td>
+                  <td class="mono">%s</td>
                   <td>%s</td>
                   <td class="muted">%s</td>
                 </tr>
                 """.formatted(WebPage.severityBadge(l.getSeverity()), WebPage.escape(l.getEventType()),
+                WebPage.escape(l.getSourceNumber() == null ? "-" : l.getSourceNumber()),
+                WebPage.escape(l.getDestinationNumber() == null ? "-" : l.getDestinationNumber()),
                 WebPage.escape(l.getMessage()), WebPage.escape(l.getCreatedAt()));
     }
 

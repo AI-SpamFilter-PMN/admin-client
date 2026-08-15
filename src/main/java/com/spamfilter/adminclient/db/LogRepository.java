@@ -35,20 +35,28 @@ public class LogRepository {
         List<Object> params = new ArrayList<>();
 
         if (severity != null && !severity.isBlank() && !"all".equalsIgnoreCase(severity)) {
-            clauses.add("severity = ?");
+            clauses.add("l.severity = ?");
             params.add(severity);
         }
         if (query != null && !query.isBlank()) {
-            clauses.add("(event_type ILIKE ? OR message ILIKE ?)");
+            clauses.add("(l.event_type ILIKE ? OR l.message ILIKE ? OR COALESCE(m.source, '') ILIKE ? OR COALESCE(m.destination, '') ILIKE ? OR COALESCE(c.source, '') ILIKE ? OR COALESCE(c.destination, '') ILIKE ?)");
             String like = "%" + query + "%";
+            params.add(like);
+            params.add(like);
+            params.add(like);
+            params.add(like);
             params.add(like);
             params.add(like);
         }
         String where = clauses.isEmpty() ? "" : "WHERE " + String.join(" AND ", clauses);
 
-        String listSql = "SELECT id, event_type, severity, message, related_message_id, related_call_id, "
-                + "created_at FROM logs " + where + " ORDER BY created_at DESC LIMIT ? OFFSET ?";
-        String countSql = "SELECT count(*) FROM logs " + where;
+        String listSql = "SELECT l.id, l.event_type, l.severity, l.message, l.related_message_id, l.related_call_id, "
+                + "COALESCE(m.source, c.source) AS source_number, COALESCE(m.destination, c.destination) AS destination_number, "
+                + "l.created_at FROM logs l LEFT JOIN messages m ON m.id = l.related_message_id "
+                + "LEFT JOIN calls c ON c.id = l.related_call_id " + where
+                + " ORDER BY l.created_at DESC LIMIT ? OFFSET ?";
+        String countSql = "SELECT count(*) FROM logs l LEFT JOIN messages m ON m.id = l.related_message_id "
+                + "LEFT JOIN calls c ON c.id = l.related_call_id " + where;
 
         List<LogEntry> items = new ArrayList<>();
         long total;
@@ -69,6 +77,8 @@ public class LogRepository {
                                 rs.getString("message"),
                                 rs.getString("related_message_id"),
                                 rs.getString("related_call_id"),
+                                rs.getString("source_number"),
+                                rs.getString("destination_number"),
                                 rs.getTimestamp("created_at").toInstant()));
                     }
                 }
