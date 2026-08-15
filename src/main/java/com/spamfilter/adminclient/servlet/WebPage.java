@@ -7,6 +7,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 /**
@@ -36,7 +40,6 @@ final class WebPage {
             new NavItem("/", "◈", "Dashboard"),
             new NavItem("/messages", "✉", "Messages"),
             new NavItem("/calls", "☎", "Calls"),
-            new NavItem("/subscribers", "▤", "Subscribers"),
             new NavItem("/blacklist", "⛔", "Blacklist"),
             new NavItem("/whitelist", "✓", "Whitelist"),
             new NavItem("/logs", "≡", "Logs"),
@@ -138,6 +141,19 @@ final class WebPage {
             return "";
         }
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    static String formatDateTime(String isoDate) {
+        if (isoDate == null || isoDate.isBlank()) {
+            return "&mdash;";
+        }
+        try {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMM yyyy, h:mm a", Locale.ENGLISH)
+                    .withZone(ZoneId.systemDefault());
+            return formatter.format(Instant.parse(isoDate));
+        } catch (Exception e) {
+            return isoDate;
+        }
     }
 
     /** role: good | warning | serious | critical | info | muted */
@@ -536,6 +552,34 @@ final class WebPage {
               });
             }
 
+            function showTextModal(title, content) {
+              const root = document.getElementById('modalRoot');
+              root.innerHTML = `
+                <div class="modal-backdrop">
+                  <div class="modal-card" style="max-width: 760px; width: min(80vw, 760px);">
+                    <h3>${escapeHtml(title)}</h3>
+                    <pre style="white-space: pre-wrap; word-break: break-word; margin: 0 0 1rem; max-height: 60vh; overflow: auto;">${escapeHtml(content || 'No content available.')}</pre>
+                    <div class="btn-row">
+                      <button type="button" class="btn-ghost" data-act="close">Close</button>
+                    </div>
+                  </div>
+                </div>`;
+              const backdrop = root.querySelector('.modal-backdrop');
+              const close = () => { root.innerHTML = ''; };
+              backdrop.addEventListener('click', (e) => { if (e.target === backdrop) close(); });
+              root.querySelector('[data-act=close]').addEventListener('click', close);
+            }
+
+            function formatDateTime(value) {
+              if (!value) return '&mdash;';
+              const date = new Date(value);
+              if (Number.isNaN(date.getTime())) return '&mdash;';
+              return new Intl.DateTimeFormat('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: 'numeric', minute: '2-digit'
+              }).format(date);
+            }
+
             async function api(url, options) {
               const res = await fetch(url, options);
               let data = null;
@@ -577,11 +621,11 @@ final class WebPage {
               let totalPages = 1;
 
               function rowHtml(e) {
-                const expires = e.expiresAt ? new Date(e.expiresAt).toLocaleString() : '&mdash;';
+                const expires = e.expiresAt ? formatDateTime(e.expiresAt) : '&mdash;';
                 return `<tr data-id="${e.id}">
                   <td class="mono">${escapeHtml(e.msisdn)}</td>
                   <td>${escapeHtml(e.reason || '')}</td>
-                  <td class="muted">${new Date(e.createdAt).toLocaleString()}</td>
+                  <td class="muted">${formatDateTime(e.createdAt)}</td>
                   <td class="muted">${expires}</td>
                   <td class="row-actions"><button type="button" class="btn-ghost btn-sm" data-del="${e.id}">Remove</button></td>
                 </tr>`;

@@ -132,15 +132,18 @@ public class MessagesServlet extends HttpServlet {
                       const statusBadge = m.status === 'BLOCKED'
                         ? '<span class="badge badge-critical"><i class="dot"></i>Blocked</span>'
                         : '<span class="badge badge-good"><i class="dot"></i>Delivered</span>';
+                      const blacklistAction = (m.blacklisted || m.isBlacklisted)
+                        ? ''
+                        : '<button type="button" class="btn-ghost btn-sm" data-list="/api/blocklist" data-msisdn="' + escapeHtml(m.source) + '" data-name="Blacklist">Blacklist</button>';
                       return `<tr>
                         <td class="mono">${escapeHtml(m.source)}</td>
                         <td class="mono">${escapeHtml(m.destination)}</td>
                         <td>${badge}</td>
                         <td>${statusBadge}</td>
-                        <td class="muted">${new Date(m.receivedAt).toLocaleString()}</td>
+                        <td class="muted">${formatDateTime(m.receivedAt)}</td>
                         <td class="row-actions">
-                          <button type="button" class="btn-ghost btn-sm" data-list="/api/blocklist" data-msisdn="${escapeHtml(m.source)}" data-name="Blacklist">Blacklist</button>
-                          <button type="button" class="btn-ghost btn-sm" data-list="/api/whitelist" data-msisdn="${escapeHtml(m.source)}" data-name="Whitelist">Whitelist</button>
+                          <button type="button" class="btn-ghost btn-sm" data-view-message="${escapeHtml(m.id || '')}" data-message="${escapeHtml(m.smsBody || '')}">View message</button>
+                          ${blacklistAction}
                         </td>
                       </tr>`;
                     }
@@ -172,6 +175,12 @@ public class MessagesServlet extends HttpServlet {
                     els.prev.addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
                     els.next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; load(); } });
                     els.body.addEventListener('click', (e) => {
+                      const viewBtn = e.target.closest('[data-view-message]');
+                      if (viewBtn) {
+                        showTextModal('Message content', viewBtn.dataset.message || 'No message content available.');
+                        return;
+                      }
+
                       const btn = e.target.closest('[data-list]');
                       if (!btn) return;
                       quickAddToList(btn.dataset.list, btn.dataset.msisdn, btn.dataset.name);
@@ -187,6 +196,10 @@ public class MessagesServlet extends HttpServlet {
     }
 
     private String row(MessageRow m) {
+        String blacklistAction = m.isBlacklisted()
+                ? ""
+                : "<button type=\"button\" class=\"btn-ghost btn-sm\" data-list=\"/api/blocklist\" data-msisdn=\"%s\" data-name=\"Blacklist\">Blacklist</button>".formatted(WebPage.escape(m.getSource()));
+
         return """
                 <tr>
                   <td class="mono">%s</td>
@@ -195,13 +208,14 @@ public class MessagesServlet extends HttpServlet {
                   <td>%s</td>
                   <td class="muted">%s</td>
                   <td class="row-actions">
-                    <button type="button" class="btn-ghost btn-sm" data-list="/api/blocklist" data-msisdn="%s" data-name="Blacklist">Blacklist</button>
-                    <button type="button" class="btn-ghost btn-sm" data-list="/api/whitelist" data-msisdn="%s" data-name="Whitelist">Whitelist</button>
+                    <button type="button" class="btn-ghost btn-sm" data-view-message="%s" data-message="%s">View message</button>
+                    %s
                   </td>
                 </tr>
                 """.formatted(WebPage.escape(m.getSource()), WebPage.escape(m.getDestination()),
-                verdictBadge(m), WebPage.messageStatusBadge(m.getStatus()), WebPage.escape(m.getReceivedAt()),
-                WebPage.escape(m.getSource()), WebPage.escape(m.getSource()));
+                verdictBadge(m), WebPage.messageStatusBadge(m.getStatus()), WebPage.formatDateTime(m.getReceivedAt()),
+                WebPage.escape(m.getId()), WebPage.escape(m.getSmsBody() == null ? "" : m.getSmsBody()),
+                blacklistAction);
     }
 
     private String verdictBadge(MessageRow m) {

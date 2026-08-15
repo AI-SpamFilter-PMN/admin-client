@@ -48,7 +48,7 @@ public class CallRepository {
         String where = clauses.isEmpty() ? "" : "WHERE " + String.join(" AND ", clauses);
 
         String listSql = "SELECT id, source, destination, started_at, ended_at, classification_label, "
-                + "classification_score, status FROM calls " + where
+                + "classification_score, status, transcript FROM calls " + where
                 + " ORDER BY started_at DESC LIMIT ? OFFSET ?";
         String countSql = "SELECT count(*) FROM calls " + where;
 
@@ -74,7 +74,8 @@ public class CallRepository {
                                 ended == null ? null : ended.toInstant(),
                                 rs.getString("classification_label"),
                                 rs.wasNull() ? null : score,
-                                rs.getString("status")));
+                                rs.getString("status"),
+                                rs.getString("transcript")));
                     }
                 }
             }

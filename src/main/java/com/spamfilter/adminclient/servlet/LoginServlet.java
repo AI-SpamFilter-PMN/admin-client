@@ -57,7 +57,7 @@ public class LoginServlet extends HttpServlet {
                     <span class="brand-text">Warden</span>
                   </a>
                   <h1>Admin sign in</h1>
-                  <p class="muted center">Manage subscribers, traffic and the block/allow lists.</p>
+                  <p class="muted center">Manage traffic and the block/allow lists.</p>
                   %s
                   <form method="post">
                     <label for="email">Email</label>

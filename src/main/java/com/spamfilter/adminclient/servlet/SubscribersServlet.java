@@ -231,7 +231,7 @@ public class SubscribersServlet extends HttpServlet {
                         <td>${escapeHtml(s.displayName || '')}</td>
                         <td class="mono muted">${escapeHtml(s.imsi || '')}</td>
                         <td>${statusBadge(s.status)}</td>
-                        <td class="muted">${new Date(s.createdAt).toLocaleString()}</td>
+                        <td class="muted">${formatDateTime(s.createdAt)}</td>
                         <td class="row-actions">
                           ${statusActions(s)}
                           <button type="button" class="btn-ghost btn-sm" data-del-msisdn="${escapeHtml(s.msisdn)}">Remove</button>
@@ -350,7 +350,7 @@ public class SubscribersServlet extends HttpServlet {
                 """.formatted(WebPage.escape(s.getId()), WebPage.escape(s.getMsisdn()),
                 WebPage.escape(s.getDisplayName() == null ? "" : s.getDisplayName()),
                 WebPage.escape(s.getImsi() == null ? "" : s.getImsi()),
-                WebPage.subscriberStatusBadge(s.getStatus()), WebPage.escape(s.getCreatedAt()),
+                WebPage.subscriberStatusBadge(s.getStatus()), WebPage.formatDateTime(s.getCreatedAt()),
                 actions, WebPage.escape(s.getMsisdn()), WebPage.escape(s.getMsisdn()), WebPage.escape(s.getMsisdn()));
     }
 

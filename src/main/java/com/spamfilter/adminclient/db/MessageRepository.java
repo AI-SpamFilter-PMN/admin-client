@@ -52,8 +52,9 @@ public class MessageRepository {
         String where = clauses.isEmpty() ? "" : "WHERE " + String.join(" AND ", clauses);
 
         String listSql = "SELECT id, source, destination, classification_label, classification_score, "
-                + "status, smpp_message_id, received_at FROM messages " + where
-                + " ORDER BY received_at DESC LIMIT ? OFFSET ?";
+                + "status, smpp_message_id, sms_body, received_at, "
+                + "EXISTS (SELECT 1 FROM blocklist b WHERE b.msisdn = messages.source) AS is_blacklisted "
+                + "FROM messages " + where + " ORDER BY received_at DESC LIMIT ? OFFSET ?";
         String countSql = "SELECT count(*) FROM messages " + where;
 
         List<MessageRow> items = new ArrayList<>();
@@ -73,6 +74,8 @@ public class MessageRepository {
                                 rs.getDouble("classification_score"),
                                 rs.getString("status"),
                                 rs.getString("smpp_message_id"),
+                                rs.getString("sms_body"),
+                                rs.getBoolean("is_blacklisted"),
                                 rs.getTimestamp("received_at").toInstant()));
                     }
                 }

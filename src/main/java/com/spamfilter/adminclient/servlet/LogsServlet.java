@@ -128,7 +128,7 @@ public class LogsServlet extends HttpServlet {
                         <td class="mono">${escapeHtml(l.sourceNumber || '-')}</td>
                         <td class="mono">${escapeHtml(l.destinationNumber || '-')}</td>
                         <td>${escapeHtml(l.message)}</td>
-                        <td class="muted">${new Date(l.createdAt).toLocaleString()}</td>
+                        <td class="muted">${formatDateTime(l.createdAt)}</td>
                       </tr>`;
                     }
 
@@ -178,7 +178,7 @@ public class LogsServlet extends HttpServlet {
                 """.formatted(WebPage.severityBadge(l.getSeverity()), WebPage.escape(l.getEventType()),
                 WebPage.escape(l.getSourceNumber() == null ? "-" : l.getSourceNumber()),
                 WebPage.escape(l.getDestinationNumber() == null ? "-" : l.getDestinationNumber()),
-                WebPage.escape(l.getMessage()), WebPage.escape(l.getCreatedAt()));
+                WebPage.escape(l.getMessage()), WebPage.formatDateTime(l.getCreatedAt()));
     }
 
     private static int parseInt(String value, int fallback) {

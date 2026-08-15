@@ -16,9 +16,10 @@ public class CallRow {
     private final String classificationLabel;
     private final Double classificationScore;
     private final String status;
+    private final String transcript;
 
     public CallRow(String id, String source, String destination, Instant startedAt, Instant endedAt,
-                    String classificationLabel, Double classificationScore, String status) {
+                    String classificationLabel, Double classificationScore, String status, String transcript) {
         this.id = id;
         this.source = source;
         this.destination = destination;
@@ -27,6 +28,7 @@ public class CallRow {
         this.classificationLabel = classificationLabel;
         this.classificationScore = classificationScore;
         this.status = status;
+        this.transcript = transcript;
     }
 
     public String getId() {
@@ -59,5 +61,9 @@ public class CallRow {
 
     public String getStatus() {
         return status;
+    }
+
+    public String getTranscript() {
+        return transcript;
     }
 }

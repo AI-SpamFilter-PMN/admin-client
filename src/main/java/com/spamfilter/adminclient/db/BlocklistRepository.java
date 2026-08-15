@@ -76,12 +76,22 @@ public class BlocklistRepository {
     }
 
     public void add(String msisdn, String reason, Instant expiresAt) {
+        addAndRemoveOpposite(msisdn, reason, expiresAt);
+    }
+
+    public void addAndRemoveOpposite(String msisdn, String reason, Instant expiresAt) {
         String sql = "INSERT INTO blocklist (msisdn, reason, expires_at) VALUES (?, ?, ?)";
-        try (Connection con = connect(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, msisdn);
-            ps.setString(2, reason);
-            ps.setTimestamp(3, expiresAt == null ? null : Timestamp.from(expiresAt));
-            ps.executeUpdate();
+        try (Connection con = connect()) {
+            try (PreparedStatement deleteWhite = con.prepareStatement("DELETE FROM whitelisted_senders WHERE sender_id = ?")) {
+                deleteWhite.setString(1, msisdn);
+                deleteWhite.executeUpdate();
+            }
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, msisdn);
+                ps.setString(2, reason);
+                ps.setTimestamp(3, expiresAt == null ? null : Timestamp.from(expiresAt));
+                ps.executeUpdate();
+            }
         } catch (SQLException e) {
             if (UNIQUE_VIOLATION.equals(e.getSQLState())) {
                 throw new IllegalArgumentException("That number is already blocklisted");

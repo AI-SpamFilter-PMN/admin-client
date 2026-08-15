@@ -8,7 +8,6 @@ import com.spamfilter.adminclient.db.DashboardRepository;
 import com.spamfilter.adminclient.db.Database;
 import com.spamfilter.adminclient.db.LogRepository;
 import com.spamfilter.adminclient.db.MessageRepository;
-import com.spamfilter.adminclient.db.SubscriberRepository;
 import com.spamfilter.adminclient.db.WhitelistRepository;
 import com.spamfilter.adminclient.servlet.BlacklistServlet;
 import com.spamfilter.adminclient.servlet.CallsServlet;
@@ -17,7 +16,6 @@ import com.spamfilter.adminclient.servlet.LoginServlet;
 import com.spamfilter.adminclient.servlet.LogoutServlet;
 import com.spamfilter.adminclient.servlet.LogsServlet;
 import com.spamfilter.adminclient.servlet.MessagesServlet;
-import com.spamfilter.adminclient.servlet.SubscribersServlet;
 import com.spamfilter.adminclient.servlet.WhitelistServlet;
 import org.apache.catalina.Context;
 import org.apache.catalina.startup.Tomcat;
@@ -49,7 +47,6 @@ public class Main {
         MessageRepository messageRepository = new MessageRepository(dataSource);
         CallRepository callRepository = new CallRepository(dataSource);
         LogRepository logRepository = new LogRepository(dataSource);
-        SubscriberRepository subscriberRepository = new SubscriberRepository(dataSource);
 
         Tomcat tomcat = new Tomcat();
         Path baseDir = Files.createTempDirectory("admin-client-tomcat");
@@ -97,12 +94,6 @@ public class Main {
         ctx.addServletMappingDecoded("/logs", "logsPage");
         Tomcat.addServlet(ctx, "logsApi", logsServlet);
         ctx.addServletMappingDecoded("/api/logs", "logsApi");
-
-        SubscribersServlet subscribersServlet = new SubscribersServlet(subscriberRepository);
-        Tomcat.addServlet(ctx, "subscribersPage", subscribersServlet);
-        ctx.addServletMappingDecoded("/subscribers", "subscribersPage");
-        Tomcat.addServlet(ctx, "subscribersApi", subscribersServlet);
-        ctx.addServletMappingDecoded("/api/subscribers", "subscribersApi");
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down admin client...");

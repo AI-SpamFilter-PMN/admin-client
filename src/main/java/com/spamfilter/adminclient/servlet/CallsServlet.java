@@ -94,7 +94,7 @@ public class CallsServlet extends HttpServlet {
 
                   <div class="table-wrap" id="callTableWrap">
                     <table>
-                      <thead><tr><th>Source</th><th>Destination</th><th>Status</th><th>Started</th><th>Duration</th></tr></thead>
+                      <thead><tr><th>Source</th><th>Destination</th><th>Status</th><th>Started</th><th>Duration</th><th></th></tr></thead>
                       <tbody id="callTableBody">%s</tbody>
                     </table>
                   </div>
@@ -137,8 +137,11 @@ public class CallsServlet extends HttpServlet {
                         <td class="mono">${escapeHtml(m.source)}</td>
                         <td class="mono">${escapeHtml(m.destination)}</td>
                         <td>${statusBadge(m.status)}</td>
-                        <td class="muted">${new Date(m.startedAt).toLocaleString()}</td>
+                        <td class="muted">${formatDateTime(m.startedAt)}</td>
                         <td class="muted">${duration(m)}</td>
+                        <td class="row-actions">
+                          <button type="button" class="btn-ghost btn-sm" data-view-transcript="${escapeHtml(m.id || '')}" data-transcript="${escapeHtml(m.transcript || '')}">View transcript</button>
+                        </td>
                       </tr>`;
                     }
 
@@ -165,6 +168,12 @@ public class CallsServlet extends HttpServlet {
                     els.query.addEventListener('keydown', (e) => { if (e.key === 'Enter') { state.page = 1; load(); } });
                     els.prev.addEventListener('click', () => { if (state.page > 1) { state.page--; load(); } });
                     els.next.addEventListener('click', () => { if (state.page < totalPages) { state.page++; load(); } });
+                    els.body.addEventListener('click', (e) => {
+                      const viewBtn = e.target.closest('[data-view-transcript]');
+                      if (viewBtn) {
+                        showTextModal('Call transcript', viewBtn.dataset.transcript || 'No transcript available for this call.');
+                      }
+                    });
                     load();
                   })();
                 </script>
@@ -189,9 +198,13 @@ public class CallsServlet extends HttpServlet {
                   <td>%s</td>
                   <td class="muted">%s</td>
                   <td class="muted">%s</td>
+                  <td class="row-actions">
+                    <button type="button" class="btn-ghost btn-sm" data-view-transcript="%s" data-transcript="%s">View transcript</button>
+                  </td>
                 </tr>
                 """.formatted(WebPage.escape(c.getSource()), WebPage.escape(c.getDestination()),
-                WebPage.callStatusBadge(c.getStatus()), WebPage.escape(c.getStartedAt()), duration);
+                WebPage.callStatusBadge(c.getStatus()), WebPage.formatDateTime(c.getStartedAt()), duration,
+                WebPage.escape(c.getId()), WebPage.escape(c.getTranscript() == null ? "" : c.getTranscript()));
     }
 
     private static int parseInt(String value, int fallback) {

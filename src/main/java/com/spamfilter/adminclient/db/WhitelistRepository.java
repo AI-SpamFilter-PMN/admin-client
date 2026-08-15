@@ -77,14 +77,24 @@ public class WhitelistRepository {
     }
 
     public void add(String senderId, String aliasName, String description, String addedBy) {
+        addAndRemoveOpposite(senderId, aliasName, description, addedBy);
+    }
+
+    public void addAndRemoveOpposite(String senderId, String aliasName, String description, String addedBy) {
         String sql = "INSERT INTO whitelisted_senders (sender_id, alias_name, description, added_by) "
                 + "VALUES (?, ?, ?, ?)";
-        try (Connection con = connect(); PreparedStatement ps = con.prepareStatement(sql)) {
-            ps.setString(1, senderId);
-            ps.setString(2, aliasName);
-            ps.setString(3, description);
-            ps.setString(4, addedBy);
-            ps.executeUpdate();
+        try (Connection con = connect()) {
+            try (PreparedStatement deleteBlock = con.prepareStatement("DELETE FROM blocklist WHERE msisdn = ?")) {
+                deleteBlock.setString(1, senderId);
+                deleteBlock.executeUpdate();
+            }
+            try (PreparedStatement ps = con.prepareStatement(sql)) {
+                ps.setString(1, senderId);
+                ps.setString(2, aliasName);
+                ps.setString(3, description);
+                ps.setString(4, addedBy);
+                ps.executeUpdate();
+            }
         } catch (SQLException e) {
             if (UNIQUE_VIOLATION.equals(e.getSQLState())) {
                 throw new IllegalArgumentException("That sender is already whitelisted");

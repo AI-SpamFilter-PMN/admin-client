@@ -15,10 +15,13 @@ public class MessageRow {
     private final double classificationScore;
     private final String status;
     private final String smppMessageId;
+    private final String smsBody;
+    private final boolean blacklisted;
     private final String receivedAt;
 
     public MessageRow(String id, String source, String destination, String classificationLabel,
-                       double classificationScore, String status, String smppMessageId, Instant receivedAt) {
+                       double classificationScore, String status, String smppMessageId, String smsBody,
+                       boolean blacklisted, Instant receivedAt) {
         this.id = id;
         this.source = source;
         this.destination = destination;
@@ -26,6 +29,8 @@ public class MessageRow {
         this.classificationScore = classificationScore;
         this.status = status;
         this.smppMessageId = smppMessageId;
+        this.smsBody = smsBody;
+        this.blacklisted = blacklisted;
         this.receivedAt = receivedAt.toString();
     }
 
@@ -55,6 +60,18 @@ public class MessageRow {
 
     public String getSmppMessageId() {
         return smppMessageId;
+    }
+
+    public String getSmsBody() {
+        return smsBody;
+    }
+
+    public boolean isBlacklisted() {
+        return blacklisted;
+    }
+
+    public boolean getBlacklisted() {
+        return blacklisted;
     }
 
     public String getReceivedAt() {
