@@ -177,14 +177,6 @@ final class WebPage {
         };
     }
 
-    static String subscriberStatusBadge(String status) {
-        return switch (status == null ? "" : status.toUpperCase()) {
-            case "SUSPENDED" -> badge("Suspended", "warning");
-            case "BLOCKED" -> badge("Blocked", "critical");
-            default -> badge("Active", "good");
-        };
-    }
-
     static String callStatusBadge(String status) {
         return switch (status == null ? "" : status.toUpperCase()) {
             case "BLOCKED" -> badge("Blocked", "critical");
