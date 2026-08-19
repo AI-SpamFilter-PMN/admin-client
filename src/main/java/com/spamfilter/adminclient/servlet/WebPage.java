@@ -74,6 +74,7 @@ final class WebPage {
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <title>%s &middot; Warden Admin</title>
                 <style>%s</style>
+                <script>%s</script>
                 </head>
                 <body>
                 <div class="app-shell">
@@ -105,11 +106,10 @@ final class WebPage {
                 </div>
                 <div id="toastStack" class="toast-stack"></div>
                 <div id="modalRoot"></div>
-                <script>%s</script>
                 </body>
                 </html>
-                """.formatted(escape(title), CSS, nav, initials(adminUsername), escape(adminUsername),
-                header, bodyHtml, RUNTIME_JS);
+                """.formatted(escape(title), CSS, RUNTIME_JS, nav, initials(adminUsername), escape(adminUsername),
+                header, bodyHtml);
     }
 
     static String bareShell(String title, String bodyHtml) {
