@@ -44,14 +44,14 @@ final class JsonSupport {
             json = MAPPER.writeValueAsString(payload);
         } catch (Exception e) {
             resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            resp.setContentType("application/json");
+            resp.setContentType("application/json; charset=UTF-8");
             try (PrintWriter out = resp.getWriter()) {
                 out.write("{\"error\":\"Internal error building response\"}");
             }
             return;
         }
         resp.setStatus(status);
-        resp.setContentType("application/json");
+        resp.setContentType("application/json; charset=UTF-8");
         try (PrintWriter out = resp.getWriter()) {
             out.write(json);
         }
